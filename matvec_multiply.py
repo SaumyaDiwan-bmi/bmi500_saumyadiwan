@@ -18,7 +18,16 @@ def dot_product(vec1, vec2):
     Returns:
         float/int: The dot product of vec1 and vec2
     """
-    # vectors must be the same length to compute a dot product
+    #guard: ensuring both inputs be lists or tuples
+    if not isinstance(vec1, (list, tuple)) or not isinstance(vec2, (list, tuple)):
+        raise TypeError(
+            f"Input vectors must be lists or tuples, got {type(vec1).__name__} and {type(vec2).__name__}"
+        )
+    #guard: checking if vector is empty
+    if len(vec1) == 0 or len(vec2) == 0:
+        raise ValueError("Vectors must not be empty")
+    
+    #guard: vectors must be the same length to compute a dot product
     if len(vec1) != len(vec2):
         raise ValueError("Vectors must be the same length")
 
@@ -46,6 +55,24 @@ def matvec_product(matrix, vec):
     Returns:
         list: The resulting vector from the matrix-vector multiplication
     """
+    #guard: ensuring both inputs be lists or tuples
+    if not isinstance(vec1, (list, tuple)) or not isinstance(vec2, (list, tuple)):
+        raise TypeError(
+            f"Input vectors must be lists or tuples, got {type(vec1).__name__} and {type(vec2).__name__}"
+        )
+    #guard: check for empty matrix
+    if len(matrix) == 0:
+        raise ValueError("Non empty matrix required")
+ 
+    # guard: check for every row to be a list/tuple to ensure all matrix roes are in same format through operations
+    if not all(isinstance(row, (list, tuple)) for row in matrix):
+        raise TypeError("Every row in matrix must be a list or tuple")
+ 
+    # guard: check for every row to be a list/tuple to ensure all matrix roes are same length
+    row_lengths = {len(row) for row in matrix}
+    if len(row_lengths) != 1:
+        raise ValueError(f"All rows in matrix must be the same length, got length variations {sorted(row_lengths)}")
+
     # number of columns in the matrix must match the length of the vector
     if len(matrix[0]) != len(vec):
         raise ValueError("Number of columns in matrix must match vector length")
@@ -70,6 +97,8 @@ def matvec_product(matrix, vec):
 def main():
     # define the size of the matrix and vector
     size = 1000
+    #guard: add seed so that the operation is reproducible
+    random.seed(25)
 
     # generate a random 1000x1000 matrix with values between 0 and 1
     matrix = [[random.random() for _ in range(size)] for _ in range(size)]
@@ -77,8 +106,14 @@ def main():
     # generate a random vector of length 1000 with values between 0 and 1
     vec = [random.random() for _ in range(size)]
 
-    # compute the matrix-vector product using our function
-    result = matvec_product(matrix, vec)
+    #guard: add failiure flag so that it can be traced
+    try: 
+
+        # compute the matrix-vector product using our function
+        result = matvec_product(matrix, vec)
+    except (TypeError, ValueError) as e:
+        print(f"matvec product operation failed failed: {e}")
+        raise SystemExit(1)
 
     # print a small sample of the result to confirm it ran correctly
     print("First 5 elements of the result:", result[:5])
