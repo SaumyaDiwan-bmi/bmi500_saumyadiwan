@@ -1,0 +1,419 @@
+#Model Used: ChatGPT GPT-5.6 Sol OpenAI reasoning model
+#Prompts and Outputs:
+#please conduct a code review of the code here. also identify parts that could be improved #Manual Review of code
+import random
+
+# create a function to compute the dot product of two vectors using a for loop
+# LLM Model Used: Claude Sonnet 5 with Medium thinking
+# Prompt used: i have a file matvec_test.py. i need to generate code based on the comments
+# here is the first comment  import random
+# create a function to compute the dot product of two vectors using a for loop
+# add comments for the selected function
+
+def dot_product(vec1, vec2):
+    """
+    Compute the dot product of two vectors using a for loop.
+    
+    Args:
+        vec1 (list): First vector (list of numbers)
+        vec2 (list): Second vector (list of numbers)
+    
+    Returns:
+        float/int: The dot product of vec1 and vec2
+    """
+    #guard: ensuring both inputs be lists or tuples
+    if not isinstance(vec1, (list, tuple)) or not isinstance(vec2, (list, tuple)):
+        raise TypeError(
+            f"Input vectors must be lists or tuples, got {type(vec1).__name__} and {type(vec2).__name__}"
+        )
+    #guard: checking if vector is empty
+    if len(vec1) == 0 or len(vec2) == 0:
+        raise ValueError("Vectors must not be empty")
+    
+    #guard: vectors must be the same length to compute a dot product
+    if len(vec1) != len(vec2):
+        raise ValueError("Vectors must be the same length")
+
+    # accumulator for the running sum of element-wise products
+    result = 0
+
+    # loop through each index, multiply corresponding elements, and add to result
+    for i in range(len(vec1)):
+        result += vec1[i] * vec2[i]
+
+    return result
+
+# create a function to compute the matrix-vector product using the dot_product function
+# LLM Model Used: Claude Sonnet 5 with Medium thinking
+# Prompt used: here is the second comment # create a function to compute the matrix-vector product using the dot_product function
+# add comments for the selected function
+def matvec_product(matrix, vec):
+    """
+    Compute the matrix-vector product using the dot_product function.
+    
+    Args:
+        matrix (list of lists): The matrix, where each inner list is a row
+        vec (list): The vector to multiply by
+    
+    Returns:
+        list: The resulting vector from the matrix-vector multiplication
+    """
+    #guard: ensuring both inputs be lists or tuples
+    if not isinstance(vec1, (list, tuple)) or not isinstance(vec2, (list, tuple)):
+        raise TypeError(
+            f"Input vectors must be lists or tuples, got {type(vec1).__name__} and {type(vec2).__name__}"
+        )
+    #guard: check for empty matrix
+    if len(matrix) == 0:
+        raise ValueError("Non empty matrix required")
+ 
+    # guard: check for every row to be a list/tuple to ensure all matrix roes are in same format through operations
+    if not all(isinstance(row, (list, tuple)) for row in matrix):
+        raise TypeError("Every row in matrix must be a list or tuple")
+ 
+    # guard: check for every row to be a list/tuple to ensure all matrix roes are same length
+    row_lengths = {len(row) for row in matrix}
+    if len(row_lengths) != 1:
+        raise ValueError(f"All rows in matrix must be the same length, got length variations {sorted(row_lengths)}")
+
+    # number of columns in the matrix must match the length of the vector
+    if len(matrix[0]) != len(vec):
+        raise ValueError("Number of columns in matrix must match vector length")
+
+    # accumulator list to hold the result of each row's dot product
+    result = []
+
+    # loop through each row in the matrix
+    for row in matrix:
+        # compute the dot product of the current row with the vector
+        row_result = dot_product(row, vec)
+        # append the result of this row to the output vector
+        result.append(row_result)
+
+    return result
+
+
+# create a main function to test the matrix-vector product function using randomly generated data of size 1000x1000
+# LLM Model Used: Claude Sonnet 5 with Medium thinking
+# Prompt used: Here is the third comment # create a main function to test the matrix-vector product function using randomly generated data of size 1000x1000
+
+def main():
+    # define the size of the matrix and vector
+    size = 1000
+    #guard: add seed so that the operation is reproducible
+    random.seed(25)
+
+    # generate a random 1000x1000 matrix with values between 0 and 1
+    matrix = [[random.random() for _ in range(size)] for _ in range(size)]
+
+    # generate a random vector of length 1000 with values between 0 and 1
+    vec = [random.random() for _ in range(size)]
+
+    #guard: add failiure flag so that it can be traced
+    try: 
+
+        # compute the matrix-vector product using our function
+        result = matvec_product(matrix, vec)
+    except (TypeError, ValueError) as e:
+        print(f"matvec product operation failed failed: {e}")
+        raise SystemExit(1)
+
+    # print a small sample of the result to confirm it ran correctly
+    print("First 5 elements of the result:", result[:5])
+    print("Length of result vector:", len(result))
+if __name__ == "__main__":
+    main()
+Your overall structure is good: the code is separated into dot_product, matvec_product, and main, and you have added validation, documentation, reproducibility, and exception handling. However, there is one critical bug that prevents the program from running, plus several places where the implementation and testing can be improved.
+1. Critical bug in matvec_product
+This block is copied from dot_product:
+if not isinstance(vec1, (list, tuple)) or not isinstance(vec2, (list, tuple)):
+    raise TypeError(
+        f"Input vectors must be lists or tuples, got {type(vec1).__name__} and {type(vec2).__name__}"
+    )
+But vec1 and vec2 do not exist inside matvec_product(). The arguments are:
+matrix, vec
+So your program will fail with:
+NameError: name 'vec1' is not defined
+It should instead validate matrix and vec:
+if not isinstance(matrix, (list, tuple)):
+    raise TypeError("Matrix must be a list or tuple")
+
+if not isinstance(vec, (list, tuple)):
+    raise TypeError("Vector must be a list or tuple")
+This is the most important issue because your current main() will never successfully calculate the matrix-vector product.
+2. Your try/except won't catch that bug
+You currently have:
+try:
+    result = matvec_product(matrix, vec)
+except (TypeError, ValueError) as e:
+Because the current bug raises a NameError, it isn't caught.
+I wouldn't recommend simply adding NameError to the exception list, though. A NameError usually indicates a programming bug rather than invalid user input. Fix the underlying bug instead.
+
+Your current exception handling is appropriate once that bug is corrected:
+
+except (TypeError, ValueError) as e:
+3. dot_product() is correct, but can be simplified
+Your current loop:
+for i in range(len(vec1)):
+    result += vec1[i] * vec2[i]
+works correctly.
+A cleaner Python implementation that still satisfies the requirement to use a for loop is:
+
+for x, y in zip(vec1, vec2):
+    result += x * y
+This avoids manually indexing the vectors and makes the intent clearer.
+So:
+
+result = 0
+
+for x, y in zip(vec1, vec2):
+    result += x * y
+
+return result
+I would prefer this implementation.
+4. Numeric values aren't validated
+Right now this passes your initial validation:
+dot_product([1, 2, "hello"], [3, 4, 5])
+but eventually fails during multiplication.
+If you're trying to make the function robust, you could explicitly check that every value is numeric:
+
+if not all(isinstance(x, (int, float)) for x in vec1):
+    raise TypeError("vec1 must contain only numeric values")
+
+if not all(isinstance(x, (int, float)) for x in vec2):
+    raise TypeError("vec2 must contain only numeric values")
+For an introductory assignment, though, this may be more validation than necessary.
+5. Empty rows need a little thought
+This matrix:
+matrix = [[], [], []]
+vec = []
+passes this check:
+if len(matrix) == 0:
+because the matrix contains three rows.
+It also passes your consistent-row-length test.
+
+Then:
+
+len(matrix[0]) == len(vec)
+is true because both are zero.
+But dot_product([], []) raises:
+
+ValueError: Vectors must not be empty
+That behavior isn't necessarily wrong, but it would be cleaner to catch the condition at the matrix level:
+if len(matrix[0]) == 0:
+    raise ValueError("Matrix rows must not be empty")
+6. The matrix validation is otherwise quite good
+This part is a good addition:
+if not all(isinstance(row, (list, tuple)) for row in matrix):
+    raise TypeError("Every row in matrix must be a list or tuple")
+and so is:
+row_lengths = {len(row) for row in matrix}
+
+if len(row_lengths) != 1:
+    raise ValueError(...)
+The second test catches ragged matrices such as:
+[
+    [1, 2, 3],
+    [4, 5],
+    [6, 7, 8]
+]
+That is useful because otherwise matrix-vector multiplication would behave unpredictably.
+There are just a couple of comment typos:
+
+# all matrix roes
+should be:
+# all matrix rows
+And this comment:
+# guard: check for every row to be a list/tuple to ensure all matrix roes are same length
+doesn't describe the code underneath it. At that point you've already checked the type; you're checking row lengths.
+I'd change it to:
+
+# Guard: ensure all matrix rows contain the same number of columns
+7. random.seed(25) is a good addition
+This is useful:
+random.seed(25)
+because every time you run the program you generate the same matrix and vector.
+That makes debugging and comparing results much easier.
+
+One small comment improvement:
+
+#guard: add seed so that the operation is reproducible
+could become:
+# Set a seed so the randomly generated test data are reproducible
+8. Your main() checks that the program runs, but not that it is correct
+Currently:
+print("First 5 elements of the result:", result[:5])
+print("Length of result vector:", len(result))
+only tells you that you produced 1,000 values.
+It doesn't verify that those values are correct.
+
+For example, your function could accidentally multiply incorrectly and still produce a result of length 1000.
+
+I'd add a small known test before the large random test:
+
+test_matrix = [
+    [1, 2],
+    [3, 4]
+]
+
+test_vec = [5, 6]
+
+test_result = matvec_product(test_matrix, test_vec)
+
+print(test_result)
+The expected result is:
+[17, 39]
+because:
+$$ 1(5)+2(6)=17 $$
+and
+
+$$ 3(5)+4(6)=39 $$
+Even better:
+
+assert matvec_product([[1, 2], [3, 4]], [5, 6]) == [17, 39]
+Then the 1000 × 1000 test can primarily test performance/scalability.
+9. A 1000 × 1000 Python-list matrix is relatively expensive
+You're creating approximately one million Python floating-point values:
+matrix = [
+    [random.random() for _ in range(size)]
+    for _ in range(size)
+]
+That's fine if the assignment explicitly requests 1000x1000, but Python lists have substantial overhead.
+If this were production numerical code, you'd normally use NumPy:
+
+matrix @ vec
+But because your assignment specifically asks you to implement matrix-vector multiplication and a dot product yourself, your list/loop approach makes sense.
+10. Some comments are more verbose than necessary
+For example:
+# accumulator list to hold the result of each row's dot product
+result = []
+
+# loop through each row in the matrix
+for row in matrix:
+    # compute the dot product of the current row with the vector
+    row_result = dot_product(row, vec)
+    # append the result of this row to the output vector
+    result.append(row_result)
+None of these comments are wrong, but the code is already reasonably self-explanatory.
+You could reduce it to:
+
+result = []
+
+for row in matrix:
+    result.append(dot_product(row, vec))
+Comments are most useful when they explain why something is being done, rather than simply restating what the Python statement does.
+A cleaned-up version
+Here's how I'd revise your code while staying close to your original assignment:
+import random
+
+
+def dot_product(vec1, vec2):
+    """
+    Compute the dot product of two vectors using a for loop.
+
+    Args:
+        vec1 (list or tuple): First vector.
+        vec2 (list or tuple): Second vector.
+
+    Returns:
+        int or float: Dot product of the two vectors.
+    """
+
+    if not isinstance(vec1, (list, tuple)) or not isinstance(vec2, (list, tuple)):
+        raise TypeError("Input vectors must be lists or tuples")
+
+    if len(vec1) == 0 or len(vec2) == 0:
+        raise ValueError("Vectors must not be empty")
+
+    if len(vec1) != len(vec2):
+        raise ValueError("Vectors must be the same length")
+
+    result = 0
+
+    for x, y in zip(vec1, vec2):
+        result += x * y
+
+    return result
+
+
+def matvec_product(matrix, vec):
+    """
+    Compute the product of a matrix and vector using dot_product().
+
+    Args:
+        matrix (list of lists): Matrix represented by rows.
+        vec (list or tuple): Vector to multiply by the matrix.
+
+    Returns:
+        list: Resulting matrix-vector product.
+    """
+
+    if not isinstance(matrix, (list, tuple)):
+        raise TypeError("Matrix must be a list or tuple")
+
+    if not isinstance(vec, (list, tuple)):
+        raise TypeError("Vector must be a list or tuple")
+
+    if len(matrix) == 0:
+        raise ValueError("Matrix must not be empty")
+
+    if not all(isinstance(row, (list, tuple)) for row in matrix):
+        raise TypeError("Every matrix row must be a list or tuple")
+
+    # Ensure the matrix is rectangular.
+    row_lengths = {len(row) for row in matrix}
+
+    if len(row_lengths) != 1:
+        raise ValueError("All matrix rows must have the same length")
+
+    if len(matrix[0]) == 0:
+        raise ValueError("Matrix rows must not be empty")
+
+    if len(matrix[0]) != len(vec):
+        raise ValueError(
+            "Number of matrix columns must equal vector length"
+        )
+
+    result = []
+
+    for row in matrix:
+        result.append(dot_product(row, vec))
+
+    return result
+
+
+def main():
+    size = 1000
+
+    # Make the random test reproducible.
+    random.seed(25)
+
+    # First verify correctness using a simple known example.
+    assert matvec_product(
+        [[1, 2], [3, 4]],
+        [5, 6]
+    ) == [17, 39]
+
+    matrix = [
+        [random.random() for _ in range(size)]
+        for _ in range(size)
+    ]
+
+    vec = [random.random() for _ in range(size)]
+
+    try:
+        result = matvec_product(matrix, vec)
+
+    except (TypeError, ValueError) as e:
+        print(f"Matrix-vector product failed: {e}")
+        raise SystemExit(1)
+
+    print("First 5 elements of the result:", result[:5])
+    print("Length of result vector:", len(result))
+
+
+if __name__ == "__main__":
+    main()
+Overall code-review assessment
+The decomposition is sensible and dot_product() itself is logically correct. Your rectangular-matrix and dimension checks are particularly worthwhile additions. The main issue is the copy/paste error using vec1 and vec2 inside matvec_product(), which currently makes the entire program fail.
+The three improvements I'd prioritize for submission are: fix the undefined variables, add a known-result correctness test, and clean up the comments/typos. After those changes, the implementation is much more robust and easier to defend in a manual code review.
