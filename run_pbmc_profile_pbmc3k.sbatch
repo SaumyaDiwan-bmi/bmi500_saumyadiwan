@@ -17,7 +17,7 @@ set -euo pipefail
 # ---------------- USER SETTINGS ----------------
 PROJECT_DIR=/users/sdiwan2/code/bmi500_project/bmi500
 DATA_DIR=/users/sdiwan2/code/bmi500_project/bmi500/data
-DATASET=pbmc6k
+DATASET=pbmc3k
 OUT_DIR=${PROJECT_DIR}/outputs/${DATASET}
 PYTHON_SCRIPT=${PROJECT_DIR}/scanpy_pbmc_profiled.py
 # ------------------------------------------------
